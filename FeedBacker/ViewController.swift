@@ -10,46 +10,55 @@ import UIKit
 import ReactiveCocoa
 import ReactiveFeedback
 import ReactiveSwift
-import Result
-
-enum Event {
-
-    case increment, decrement
-}
 
 class ViewController: UIViewController {
 
     @IBOutlet weak var incrementButton: UIButton!
     @IBOutlet weak var decrementButton: UIButton!
     @IBOutlet weak var label: UILabel!
+
+    let service: Service
+
+    override init(nibName nibNameOrNil: String?, bundle nibBundleOrNil: Bundle?) {
+
+        service = Service()
+        
+        super.init(nibName: nibNameOrNil, bundle: nibBundleOrNil)
+    }
+
+    required init?(coder aDecoder: NSCoder) {
+
+        service = Service()
+
+        super.init(coder: aDecoder)
+    }
     
     override func viewDidLoad() {
 
         super.viewDidLoad()
 
-        let increment = Feedback<Int, Event> { _ in
-            return self.incrementButton.reactive
-                .controlEvents(.touchUpInside)
-                .map { _ in Event.increment }
-        }
+        incrementButton.reactive
+            .controlEvents(.touchUpInside)
+            .observeValues { [unowned self] _ in
+                self.service.incrementObserver.send(value: ())
+            }
 
-        let decrement = Feedback<Int, Event> { _ in
-            return self.decrementButton.reactive
-                .controlEvents(.touchUpInside)
-                .map { _ in Event.decrement }
-        }
+        decrementButton.reactive
+            .controlEvents(.touchUpInside)
+            .observeValues { [unowned self] _ in
+                self.service.decrementObserver.send(value: ())
+            }
 
-        let system = SignalProducer<Int, NoError>.system(
-            initial: 0, reduce: { (count, event) -> Int in
-                switch event {
-                case .increment:
-                    return count + 1
-                case .decrement:
-                    return count - 1
+        service.status.signal.observeValues({
+            print($0)
+        })
+
+        label.reactive.text <~ service.status.signal
+            .map { status -> String in
+                switch status {
+                case .count(let int):
+                    return String(int)
                 }
-        },
-            feedbacks: [increment, decrement])
-
-        label.reactive.text <~ system.map(String.init)
+            }
     }
 }
