@@ -3,7 +3,6 @@
 //  FeedBackerTests
 //
 //  Created by Francisco Amado on 02/02/2019.
-//  Copyright © 2019 franciscoamado. All rights reserved.
 //
 
 import XCTest
